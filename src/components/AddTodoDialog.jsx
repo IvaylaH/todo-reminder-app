@@ -18,6 +18,13 @@ import { supabase } from '../config/supabase';
 
 const STATUS_OPTIONS = ['TODO', 'INPROGRESS', 'DONE', 'CANCELLED'];
 
+const STATUS_LABELS = {
+  TODO: 'TODO',
+  INPROGRESS: 'In Progress',
+  DONE: 'Done',
+  CANCELLED: 'Cancelled',
+};
+
 function AddTodoDialog({ open, onClose }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -178,7 +185,7 @@ function AddTodoDialog({ open, onClose }) {
                 onChange={handleChange}
                 disabled={loadingUsers}
               >
-                <MenuItem value="">None</MenuItem>
+                <MenuItem value="">Unassigned</MenuItem>
                 {loadingUsers ? (
                   <MenuItem disabled>
                     <CircularProgress size={20} sx={{ mr: 1 }} />
@@ -227,7 +234,7 @@ function AddTodoDialog({ open, onClose }) {
               >
                 {STATUS_OPTIONS.map((option) => (
                   <MenuItem key={option} value={option}>
-                    {option}
+                    {STATUS_LABELS[option]}
                   </MenuItem>
                 ))}
               </TextField>

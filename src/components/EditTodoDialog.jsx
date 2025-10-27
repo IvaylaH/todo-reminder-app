@@ -19,6 +19,13 @@ import { supabase } from '../config/supabase';
 
 const STATUS_OPTIONS = ['TODO', 'INPROGRESS', 'DONE', 'CANCELLED'];
 
+const STATUS_LABELS = {
+  TODO: 'TODO',
+  INPROGRESS: 'In Progress',
+  DONE: 'Done',
+  CANCELLED: 'Cancelled',
+};
+
 function EditTodoDialog({ open, todo, onClose }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -214,7 +221,7 @@ function EditTodoDialog({ open, todo, onClose }) {
               >
                 {STATUS_OPTIONS.map((option) => (
                   <MenuItem key={option} value={option}>
-                    {option}
+                    {STATUS_LABELS[option]}
                   </MenuItem>
                 ))}
               </TextField>

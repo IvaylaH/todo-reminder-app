@@ -8,9 +8,13 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
+  Collapse,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ClearIcon from '@mui/icons-material/Clear';
 import { supabase } from '../config/supabase';
 
 const STATUS_COLORS = {
@@ -20,7 +24,15 @@ const STATUS_COLORS = {
   CANCELLED: 'error',
 };
 
+const STATUS_LABELS = {
+  TODO: 'TODO',
+  INPROGRESS: 'In Progress',
+  DONE: 'Done',
+  CANCELLED: 'Cancelled',
+};
+
 function TodoItem({ todo, onEdit, onDelete }) {
+  const [expanded, setExpanded] = useState(false);
   const [authorName, setAuthorName] = useState('');
   const [assigneeName, setAssigneeName] = useState('');
   const [loadingAuthor, setLoadingAuthor] = useState(false);
@@ -81,7 +93,7 @@ function TodoItem({ todo, onEdit, onDelete }) {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'No deadline';
+    if (!dateString) return null;
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
       year: 'numeric',
@@ -103,42 +115,45 @@ function TodoItem({ todo, onEdit, onDelete }) {
     });
   };
 
+  const deadlineText = formatDate(todo.deadline);
+
   return (
-    <Card>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+    <Card sx={{ mb: expanded ? 1 : 2 }}>
+      <CardContent sx={{ pb: 1 }}>
+        {/* Collapsed View */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 'fit-content' }}>
               <Chip
-                label={todo.status}
+                label={STATUS_LABELS[todo.status]}
                 color={STATUS_COLORS[todo.status]}
                 size="small"
               />
-              <Typography variant="caption" color="text.secondary">
-                Created: {formatCreatedAt(todo.created_at)}
-              </Typography>
             </Box>
-            <Typography variant="h6" component="div" gutterBottom>
-              {todo.name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {todo.description}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
-              <Typography variant="body2" color="text.secondary">
-                <strong>Author:</strong> {loadingAuthor ? <CircularProgress size={16} sx={{ ml: 1 }} /> : authorName}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
+              <Typography variant="body2" sx={{ minWidth: 'fit-content' }}>
+                <strong>Author:</strong>{' '}
+                <span style={{ color: '#32CD32' }}>
+                  {loadingAuthor ? <CircularProgress size={14} sx={{ ml: 0.5 }} /> : authorName}
+                </span>
               </Typography>
-              {todo.assignee_id && (
-                <Typography variant="body2" color="text.secondary">
-                  <strong>Assignee:</strong> {loadingAssignee ? <CircularProgress size={16} sx={{ ml: 1 }} /> : assigneeName}
-                </Typography>
-              )}
-              <Typography variant="body2" color="text.secondary">
-                <strong>Deadline:</strong> {formatDate(todo.deadline)}
+              <Typography variant="body2" sx={{ minWidth: 'fit-content' }}>
+                <strong>Deadline:</strong>{' '}
+                <span style={{ color: '#32CD32' }}>
+                  {deadlineText ? deadlineText : <ClearIcon sx={{ fontSize: 16, verticalAlign: 'middle' }} />}
+                </span>
               </Typography>
             </Box>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            <Tooltip title={expanded ? 'Collapse' : 'Expand'}>
+              <IconButton
+                size="small"
+                onClick={() => setExpanded(!expanded)}
+              >
+                {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Edit">
               <IconButton
                 color="primary"
@@ -150,7 +165,12 @@ function TodoItem({ todo, onEdit, onDelete }) {
             </Tooltip>
             <Tooltip title="Delete">
               <IconButton
-                color="error"
+                sx={{
+                  color: '#D46C3A',
+                  '&:hover': {
+                    backgroundColor: 'rgba(160, 82, 45, 0.1)',
+                  },
+                }}
                 onClick={() => onDelete(todo.todo_id)}
                 size="small"
               >
@@ -159,6 +179,31 @@ function TodoItem({ todo, onEdit, onDelete }) {
             </Tooltip>
           </Box>
         </Box>
+
+        {/* Expanded View */}
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <Box sx={{ mt: 1, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+            <Typography variant="h6" component="div" sx={{ mb: 1 }}>
+              {todo.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {todo.description}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {todo.assignee_id && (
+                <Typography variant="body2">
+                  <strong>Assignee:</strong>{' '}
+                  <span style={{ color: '#32CD32' }}>
+                    {loadingAssignee ? <CircularProgress size={14} sx={{ ml: 0.5 }} /> : assigneeName}
+                  </span>
+                </Typography>
+              )}
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                Created: {formatCreatedAt(todo.created_at)}
+              </Typography>
+            </Box>
+          </Box>
+        </Collapse>
       </CardContent>
     </Card>
   );
