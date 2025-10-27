@@ -45,12 +45,12 @@ function TodoListPage() {
     fetchTodos();
   }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (todoId) => {
     try {
       const { error: deleteError } = await supabase
         .from('todos')
         .delete()
-        .eq('id', id);
+        .eq('todo_id', todoId);
 
       if (deleteError) throw deleteError;
       await fetchTodos();
@@ -116,7 +116,7 @@ function TodoListPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {todos.map((todo) => (
             <TodoItem
-              key={todo.id}
+              key={todo.todo_id}
               todo={todo}
               onEdit={handleEdit}
               onDelete={handleDelete}

@@ -9,6 +9,7 @@ import {
   MenuItem,
   Box,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -20,24 +21,53 @@ const STATUS_OPTIONS = ['TODO', 'INPROGRESS', 'DONE', 'CANCELLED'];
 
 function EditTodoDialog({ open, todo, onClose }) {
   const [formData, setFormData] = useState({
+    name: '',
     description: '',
-    author: '',
+    author_id: '',
+    assignee_id: '',
     deadline: null,
     status: 'TODO',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      fetchUsers();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (todo) {
       setFormData({
+        name: todo.name || '',
         description: todo.description || '',
-        author: todo.author || '',
+        author_id: todo.author_id || '',
+        assignee_id: todo.assignee_id || '',
         deadline: todo.deadline ? dayjs(todo.deadline) : null,
         status: todo.status || 'TODO',
       });
     }
   }, [todo]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const { data, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .order('first_name', { ascending: true });
+
+      if (fetchError) throw fetchError;
+      setUsers(data || []);
+    } catch (err) {
+      console.error('Failed to fetch users:', err.message);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,15 +83,18 @@ function EditTodoDialog({ open, todo, onClose }) {
     setLoading(true);
 
     try {
+      const todoData = {
+        name: formData.name,
+        description: formData.description,
+        assignee_id: formData.assignee_id,
+        deadline: formData.deadline ? formData.deadline.toISOString() : null,
+        status: formData.status,
+      };
+
       const { error: updateError } = await supabase
         .from('todos')
-        .update({
-          description: formData.description,
-          author: formData.author,
-          deadline: formData.deadline ? formData.deadline.toISOString() : null,
-          status: formData.status,
-        })
-        .eq('id', todo.id);
+        .update(todoData)
+        .eq('todo_id', todo.todo_id);
 
       if (updateError) throw updateError;
       onClose();
@@ -92,6 +125,14 @@ function EditTodoDialog({ open, todo, onClose }) {
               <TextField
                 required
                 fullWidth
+                label="Name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+              />
+              <TextField
+                required
+                fullWidth
                 label="Description"
                 name="description"
                 value={formData.description}
@@ -102,14 +143,42 @@ function EditTodoDialog({ open, todo, onClose }) {
                 helperText={`${formData.description.length}/1000 characters`}
               />
               <TextField
-                required
                 fullWidth
+                select
                 label="Author"
-                name="author"
-                value={formData.author}
+                name="author_id"
+                value={formData.author_id}
+                disabled={true}
+              >
+                {users.map((user) => (
+                  <MenuItem key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                fullWidth
+                select
+                label="Assignee"
+                name="assignee_id"
+                value={formData.assignee_id}
                 onChange={handleChange}
-                inputProps={{ maxLength: 200 }}
-              />
+                disabled={loadingUsers}
+              >
+                <MenuItem value="">Unassigned</MenuItem>
+                {loadingUsers ? (
+                  <MenuItem disabled>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    Loading users...
+                  </MenuItem>
+                ) : (
+                  users.map((user) => (
+                    <MenuItem key={user.id} value={user.id}>
+                      {user.first_name} {user.last_name}
+                    </MenuItem>
+                  ))
+                )}
+              </TextField>
               <DateTimePicker
                 label="Deadline"
                 value={formData.deadline}
